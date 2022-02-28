@@ -47,8 +47,15 @@ namespace Parser {
         VARIABLE
     };
 
-    void preprocessor(std::vector<std::string> files) {
+    void preprocessor(std::vector<std::string> &project) {
+        //build include dependencies <= list of indexes of included files?
+        // https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/file_dependency_example.html
+        // https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+        
 
+
+        //handle defines
+        //trickle-down of defines?
     }
 
     //this needs to be recursive to catch states inside other states, but also has to get the data to read
@@ -100,11 +107,19 @@ namespace Parser {
     }
 
     void parseProject(std::string directory) {
-        for (const auto& entry : fs::directory_iterator(directory)) {
-            //if regex match .cpp, .h, or .hpp
-            std::cout << entry.path();
-            outputFile(parseFile(entry.path().string()));
-        }
+        //read in all source code files in the directory and all subdirectories
+        std::vector<std::string> project;
+        for (const auto& entry : fs::directory_iterator(directory))
+            if (entry.path().extension() == "h" || entry.path().extension() == "cpp" || entry.path().extension() == "hpp") {
+                std::fstream inputStream(entry.path());
+                if (inputStream.is_open()) {
+                    std::string content((std::istreambuf_iterator<char>(inputStream)), (std::istreambuf_iterator<char>()));
+                    project.push_back(content);
+                    inputStream.close();
+                }
+            }
+        //outputFile(parseFile(entry.path().string()));
+        preprocessor(project);
     }
 
     //option to directly pass the parsed data?
@@ -112,11 +127,9 @@ namespace Parser {
 
 //TEMP (for testing)
 int main() {
-    std::string temp2 = "\n      #define something something&Else";
+    std::string temp2 = "\n#define something something&Else";
     std::smatch m;
     std::regex r;
     r = "^[ \t]*#[ \t]*define[ \t]+[[:graph:]]+[ \t]+[[:print:]]+$";
     if (std::regex_search(temp2, m, r)) std::cout << "match found\n";
-
-
 }
