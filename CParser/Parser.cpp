@@ -13,6 +13,7 @@
 namespace fs = std::filesystem;
 
 //TEMP (for testing)
+#pragma region tempRegion
 #include <iostream>
 #define FILENAME = "example.txt"
 
@@ -35,51 +36,18 @@ template <class T> std::string type_name() {
     return r;
 }
 //END TEMP
+#pragma endregion tempRegion
 
 namespace Parser {
 
-    enum parserState {
-        VOID,
-        NAMESPACE,
-        CLASS,
-        FUNCTION,
-        ENUM,
-        VARIABLE
-    };
-
-    void preprocessor(std::vector<std::string> &project) {
-        //build include dependencies <= list of indexes of included files?
-        // https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/file_dependency_example.html
-        // https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
-        
-
-
-        //handle defines
-        //trickle-down of defines?
-    }
-
     //this needs to be recursive to catch states inside other states, but also has to get the data to read
-    inline std::vector<datatypes> parseFile(std::string filename) {
-        std::fstream inputStream(filename);
-        if (inputStream.is_open()) {
-            std::string content((std::istreambuf_iterator<char>(inputStream)), (std::istreambuf_iterator<char>()));
-            //act on defines
-            //split by command? -> push_back to vector<string>
-            std::vector<std::string> file;
-
-            std::smatch m;
-            std::regex r;
-            r = "^[ \t]*#[ \t]*define[ \t]+[[:graph:]]+[ \t]+[[:print:]]+$";
-            std::vector<int> positions;
-            while (std::regex_search(content, m, r)) positions.push_back(m.position());
-
-            inputStream.close();
-            int index = 0;
-            return recursiveParse(file, index);
-        }
+    inline std::vector<datatypes> parseFile(std::string file) {
+        int index = 0;
+        std::vector<std::string> myVec = {};
+        return recursiveParse(myVec, index);
     }
 
-    std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state = VOID) {
+    std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state) {
         //REGEX pattern matching to determine next state
         //throw out anything after regex comment match
 
@@ -100,10 +68,16 @@ namespace Parser {
             //Also includes VOID
             break;
         }
+        return {};
     }
 
-    inline void outputFile(std::vector<datatypes> myData) {
-
+    void removeComments(std::vector<std::string>& project) {
+        std::smatch m;
+        std::regex r1("//[[:print:]]+$"), r2("/\*[[:print:]]\*/");
+        for (std::string &file : project) {
+            while (std::regex_search(file, m, r1)) file.erase(m.position(), m.length());
+            while (std::regex_search(file, m, r2)) file.erase(m.position(), m.length()); //TODO: look into better syntax for this
+        }
     }
 
     void parseProject(std::string directory) {
@@ -118,8 +92,13 @@ namespace Parser {
                     inputStream.close();
                 }
             }
-        //outputFile(parseFile(entry.path().string()));
+        removeComments(project);
         preprocessor(project);
+        std::vector<datatypes> myData;
+        for (std::string file : project) {
+            std::vector<datatypes> tempData = parseFile(file);
+            std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
+        }
     }
 
     //option to directly pass the parsed data?
@@ -129,7 +108,10 @@ namespace Parser {
 int main() {
     std::string temp2 = "\n#define something something&Else";
     std::smatch m;
-    std::regex r;
-    r = "^[ \t]*#[ \t]*define[ \t]+[[:graph:]]+[ \t]+[[:print:]]+$";
-    if (std::regex_search(temp2, m, r)) std::cout << "match found\n";
+    std::regex r("^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)");
+    if (std::regex_search(temp2, m, r)) std::cout << "match found: " << m[1] << " " << m[2] << "\n";
+
+#define something somethingElse;
+    std::string test = "here is something ";
+    std::cout << test;
 }

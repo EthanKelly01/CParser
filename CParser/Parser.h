@@ -1,15 +1,24 @@
 #pragma once
 
 #include "Structs.h"
+#include "Preprocessor.h"
 
 namespace Parser {
-	void preprocessor(std::vector<std::string>& project);
+
+    enum parserState {
+        VOID,
+        NAMESPACE,
+        CLASS,
+        FUNCTION,
+        ENUM,
+        VARIABLE
+    };
 
 	inline std::vector<datatypes> parseFile(std::string filename);
 
-	std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state);
+	std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state = VOID);
 
-	inline void outputFile(std::vector<datatypes> myData);
+    void removeComments(std::vector<std::string>& project);
 
 	void parseProject(std::string directory);
 }
