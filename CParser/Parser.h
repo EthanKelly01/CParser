@@ -14,9 +14,9 @@ namespace Parser {
         VARIABLE
     };
 
-	inline std::vector<datatypes> parseFile(std::string filename);
+	inline std::vector<datatypes*> parseFile(std::string filename);
 
-	std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state = VOID);
+	std::vector<datatypes*> recursiveParse(std::vector<std::string> file, int& index, int state = VOID);
 
     void removeComments(std::vector<std::string>& project);
 

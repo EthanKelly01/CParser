@@ -44,29 +44,29 @@ namespace Parser {
 	struct functions : public datatypes {
 		//complex/primitive/class return, string name, list of complex/primitive/class parameters
 
-		datatypes returnType;
+		datatypes* returnType;
 		std::string name;
-		std::vector<datatypes> params;
+		std::vector<datatypes*> params;
 
-		functions(datatypes t_returnType, std::string t_name, std::vector<datatypes> t_params = {}) : returnType(t_returnType), name(t_name), params(t_params) {};
+		functions(datatypes* t_returnType, std::string t_name, std::vector<datatypes*> t_params = {}) : returnType(t_returnType), name(t_name), params(t_params) {};
 
 		std::string toString() {
-			std::string output = returnType.toString() + " " + name + "(";
-			for (datatypes x : params) output += x.toString() + ", ";
+			std::string output = returnType->toString() + " " + name + "(";
+			for (datatypes* &x : params) output += x->toString() + ", ";
 			return output + ");";
 		}
 	};
 
 	struct classes : public datatypes {
 		//may contain all of the above
-		std::vector<datatypes> m_public, m_private, m_protected;
+		std::vector<datatypes*> m_public, m_private, m_protected;
 		std::string name, modifier;
 		std::vector<std::string> bases, friends;
 
 		classes(
 			std::string t_name, std::string t_modifier = "",
 			std::vector<std::string> t_bases = {}, std::vector<std::string> t_friends = {},
-			std::vector<datatypes> t_public = {}, std::vector<datatypes> t_private = {}, std::vector<datatypes> t_protected = {})
+			std::vector<datatypes*> t_public = {}, std::vector<datatypes*> t_private = {}, std::vector<datatypes*> t_protected = {})
 
 			: name(t_name), modifier(t_modifier),
 			bases(t_bases), friends(t_friends),
@@ -75,12 +75,12 @@ namespace Parser {
 		std::string toString() {
 			std::string output = modifier + " " + name + " {\n";
 			output += "public:\n";
-			for (datatypes x : m_public) output += "\t" + x.toString() + ";\n";
+			for (datatypes* &x : m_public) output += "\t" + x->toString() + ";\n";
 			output += "private:\n";
-			for (datatypes x : m_private) output += "\t" + x.toString() + ";\n";
+			for (datatypes* &x : m_private) output += "\t" + x->toString() + ";\n";
 			output += "protected:\n";
-			for (datatypes x : m_protected) output += "\t" + x.toString() + ";\n";
-			for (std::string x : friends) output += "\tfriend class " + x + "\n";
+			for (datatypes* &x : m_protected) output += "\t" + x->toString() + ";\n";
+			for (std::string &x : friends) output += "\tfriend class " + x + "\n";
 			return output + "};";
 		}
 	};
@@ -88,13 +88,13 @@ namespace Parser {
 	struct namespaces : public datatypes {
 		//may contain all of the above
 		std::string name;
-		std::vector<datatypes> members;
+		std::vector<datatypes*> members;
 
-		namespaces(std::string t_name, std::vector<datatypes> t_members = {}) : name(t_name), members(t_members) {};
+		namespaces(std::string t_name, std::vector<datatypes*> t_members = {}) : name(t_name), members(t_members) {};
 
 		std::string toString() {
 			std::string output = "namespace " + name + " {\n";
-			for (datatypes x : members) output += "\t" + x.toString() + "\n";
+			for (datatypes* &x : members) output += "\t" + x->toString() + "\n";
 			return output + "}";
 		}
 	};

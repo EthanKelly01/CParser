@@ -41,13 +41,16 @@ template <class T> std::string type_name() {
 namespace Parser {
 
     //this needs to be recursive to catch states inside other states, but also has to get the data to read
-    inline std::vector<datatypes> parseFile(std::string file) {
+    inline std::vector<datatypes*> parseFile(std::string file) {
         int index = 0;
         std::vector<std::string> myVec = {};
+
+        //split file by delimiter/command
+
         return recursiveParse(myVec, index);
     }
 
-    std::vector<datatypes> recursiveParse(std::vector<std::string> file, int& index, int state) {
+    std::vector<datatypes*> recursiveParse(std::vector<std::string> file, int& index, int state) {
         //REGEX pattern matching to determine next state
         //throw out anything after regex comment match
 
@@ -94,9 +97,9 @@ namespace Parser {
             }
         removeComments(project);
         preprocessor(project);
-        std::vector<datatypes> myData;
+        std::vector<datatypes*> myData;
         for (std::string file : project) {
-            std::vector<datatypes> tempData = parseFile(file);
+            std::vector<datatypes*> tempData = parseFile(file);
             std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
         }
     }
