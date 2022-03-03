@@ -76,18 +76,19 @@ namespace Parser {
 
     void removeComments(std::vector<std::string>& project) {
         std::smatch m;
-        std::regex r1("//[[:print:]]+$"), r2("/\*[[:print:]]\*/");
+        std::regex r("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)");
+        std::regex r1("^[ \t]*$");
         for (std::string &file : project) {
-            while (std::regex_search(file, m, r1)) file.erase(m.position(), m.length());
-            while (std::regex_search(file, m, r2)) file.erase(m.position(), m.length()); //TODO: look into better syntax for this
+            while (std::regex_search(file, m, r)) file.erase(m.position(), m.length());
+            while (std::regex_search(file, m, r1)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position()-1, 1) : file.erase(m.position(), m.length()+1);
         }
     }
 
     void parseProject(std::string directory) {
         //read in all source code files in the directory and all subdirectories
         std::vector<std::string> project;
-        for (const auto& entry : fs::directory_iterator(directory))
-            if (entry.path().extension() == "h" || entry.path().extension() == "cpp" || entry.path().extension() == "hpp") {
+        for (const auto& entry : fs::recursive_directory_iterator(directory))
+            if (entry.path().extension() == ".h" || entry.path().extension() == ".cpp" || entry.path().extension() == ".hpp") {
                 std::fstream inputStream(entry.path());
                 if (inputStream.is_open()) {
                     std::string content((std::istreambuf_iterator<char>(inputStream)), (std::istreambuf_iterator<char>()));
@@ -96,12 +97,13 @@ namespace Parser {
                 }
             }
         removeComments(project);
-        preprocessor(project);
-        std::vector<datatypes*> myData;
-        for (std::string file : project) {
-            std::vector<datatypes*> tempData = parseFile(file);
-            std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
-        }
+        //preprocessor(project);
+        //std::vector<datatypes*> myData;
+        //for (std::string file : project) {
+        //    std::vector<datatypes*> tempData = parseFile(file);
+        //    std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
+        //}
+        std::cout << project[0];
     }
 
     //option to directly pass the parsed data?
@@ -112,9 +114,10 @@ int main() {
     std::string temp2 = "\n#define something something&Else";
     std::smatch m;
     std::regex r("^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)");
-    if (std::regex_search(temp2, m, r)) std::cout << "match found: " << m[1] << " " << m[2] << "\n";
+    //if (std::regex_search(temp2, m, r)) std::cout << "match found: " << m[1] << " " << m[2] << "\n";
 
 #define something somethingElse;
     std::string test = "here is something ";
-    std::cout << test;
+    //std::cout << test << "\n";
+    Parser::parseProject("C:/Users/EthanKelly/Desktop/Code/CParser");
 }
