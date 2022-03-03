@@ -1,5 +1,7 @@
 #pragma once
-#include "Parser.h"
+#include "Structs.h"
+
+#include <map>
 
 namespace Parser {
     typedef std::vector<std::pair<std::string, std::string>> define; //TODO: rename for clarity
@@ -16,7 +18,7 @@ namespace Parser {
 
 	void preprocessor(std::vector<std::string>& project);
 
-	void constructDeps(std::vector<std::string>& project, std::vector<dependency>& myTree, std::vector<std::string>& filesDone);
+	void constructDeps(std::vector<std::string>& project, std::map<std::string, dependency>& myTree, std::vector<std::string>& filesDone, int index = 0);
 
     void findCycles(dependency current, dependency match);
 

@@ -3,18 +3,20 @@
 #include <assert.h> //TODO: fix this system
 #include <regex>
 
+//TEMP (testing)
+#include <iostream>
+
 namespace Parser {
 
     void preprocessor(std::vector<std::string>& project) {
-
-        std::vector<dependency> myTree;
+        std::map<std::string, dependency> myTree;
         std::vector<std::string> filesDone = {};
         constructDeps(project, myTree, filesDone);
-        for (dependency x : myTree) findCycles(x, x);
+        for (std::pair<std::string, dependency> x: myTree) findCycles(x.second, x.second);
 
         for (std::string &file : project) {
             dependency current;
-            for (dependency x : myTree) if (x.filename == file.substr(10, file.find_first_of("\n"))) current = x; //find matching dependency struct //TODO: improve this
+            for (std::pair<std::string, dependency> x : myTree) if (x.first == file.substr(11, file.find_first_of("\n") - 11)) current = x.second; //find matching dependency struct //TODO: improve this
             define myDefines = findDefines(file);
             //handle defines
             for (std::pair<std::string, std::string> x : myDefines) {
@@ -25,45 +27,49 @@ namespace Parser {
         }
     }
 
-    void constructDeps(std::vector<std::string>& project, std::vector<dependency>& myTree, std::vector<std::string>& filesDone) {
+    void constructDeps(std::vector<std::string>& project, std::map<std::string, dependency>& myTree, std::vector<std::string>& filesDone, int index) {
+        //TODO: Resolve circular dependency issues. Temp dependency?
+        if (index > project.size()) {
+            //std::cout << "Something went wrong.\n";
+            return;
+        }
         std::smatch m;
-        std::regex r("^[ \t]*#[ \t]*include[ \t]+\"[[:graph:]]+\""); //find all valid includes in a file
+        std::regex r;
 
         bool fileSkipped = 0;
         for (std::string file : project) {
-            std::string filename = file.substr(10, file.find_first_of("\n"));
-            for (dependency x : myTree) if (x.filename == filename) goto outerLoop; //file is already counted
+            bool curFileSkipped = 0;
+            std::string filename = file.substr(11, file.find_first_of("\n") - 11); //TODO: make this regex or something
+            if (std::find(filesDone.begin(), filesDone.end(), filename) != filesDone.end()) continue;
+            //std::cout << "File started: " << filename << "\n";
+            std::vector<dependency> deps;
 
-            {
-                std::vector<dependency> dependencies;
-
-                //find all dependencies
-                r = "^[ \t]*#[ \t]*include[ \t]+\"([[:graph:]]+)\""; //find all valid includes in a file
+            r = "^[ \t]*#[ \t]*include[ \t]+\"([[:graph:]]+)\""; //find all valid includes in a file
+            while (std::regex_search(file, m, r)) {
+                if (std::find(filesDone.begin(), filesDone.end(), m[1]) == filesDone.end()) {
+                    fileSkipped = true;
+                    curFileSkipped = true;
+                    //std::cout << "File skipped: " << filename << "\n";
+                    break;
+                }
+                deps.push_back(myTree.find(m[1])->second);
+                //std::cout << file.substr(m.position(), m.length()) << "\n";
+                file.erase(m.position(), m.length());
+            }
+            if (!curFileSkipped) {
+                define defines;
+                r = "^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)"; //add all defines
                 while (std::regex_search(file, m, r)) {
-                    if (std::find(filesDone.begin(), filesDone.end(), m[1]) == filesDone.end()) {
-                        fileSkipped = true;
-                        goto outerLoop; //TODO: find better system to check for dupes
-                    }
-
-                    for (dependency x : myTree) if (x.filename == m[1]) {
-                        dependencies.push_back(x);
-                        break;
-                    }
+                    defines.push_back({ m[1], m[2] }); //add each valid define in the file
+                    file.erase(m.position(), m.length());
                 }
 
-                define defines;
-                //add all defines
-                r = "^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)";
-                while (std::regex_search(file, m, r)) defines.push_back({ m[1], m[2] }); //add each valid define in the file
-
-                myTree.push_back({ filename, dependencies, defines });
+                myTree.insert({ filename, { filename, deps, defines } });
                 filesDone.push_back(filename);
-            }
-
-        outerLoop:
-            int temp = 0; //TODO: fix this
+                //std::cout << filename << " file done\n";
+            } else for (dependency x : deps) file += "#include \"" + x.filename + "\"\n";
         }
-        if (fileSkipped) constructDeps(project, myTree, filesDone);
+        if (fileSkipped) constructDeps(project, myTree, filesDone, index + 1);
     }
 
     void findCycles(dependency current, dependency match) {

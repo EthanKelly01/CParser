@@ -92,18 +92,18 @@ namespace Parser {
                 std::fstream inputStream(entry.path());
                 if (inputStream.is_open()) {
                     std::string content((std::istreambuf_iterator<char>(inputStream)), (std::istreambuf_iterator<char>()));
-                    project.push_back(content);
+                    project.push_back("#filename: " + entry.path().filename().string() + "\n" + content);
                     inputStream.close();
                 }
             }
         removeComments(project);
-        //preprocessor(project);
+        preprocessor(project);
         //std::vector<datatypes*> myData;
         //for (std::string file : project) {
         //    std::vector<datatypes*> tempData = parseFile(file);
         //    std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
         //}
-        std::cout << project[0];
+        //std::cout << project[0];
     }
 
     //option to directly pass the parsed data?
@@ -111,13 +111,5 @@ namespace Parser {
 
 //TEMP (for testing)
 int main() {
-    std::string temp2 = "\n#define something something&Else";
-    std::smatch m;
-    std::regex r("^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)");
-    //if (std::regex_search(temp2, m, r)) std::cout << "match found: " << m[1] << " " << m[2] << "\n";
-
-#define something somethingElse;
-    std::string test = "here is something ";
-    //std::cout << test << "\n";
     Parser::parseProject("C:/Users/EthanKelly/Desktop/Code/CParser");
 }
