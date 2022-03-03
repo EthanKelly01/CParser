@@ -8,19 +8,23 @@ namespace Parser {
 
     struct dependency {
         //TODO: find better graphing system to store these
-        std::string filename;
-        std::vector<dependency> dependencies;
+        std::vector<dependency*> dependencies;
         define defines;
 
-        dependency() = default;
-        dependency(std::string t_filename, std::vector<dependency> t_dependencies = {}, define t_defines = {}) : filename(t_filename), dependencies(t_dependencies), defines(t_defines) {};
+        //dependency() = default;
+        dependency(std::vector<dependency*> t_dependencies = {}, define t_defines = {}) : dependencies(t_dependencies), defines(t_defines) {};
+        void fillDep(std::vector<dependency*> deps, define t_defines) {
+            dependencies = deps;
+            defines = t_defines;
+        }
     };
 
 	void preprocessor(std::vector<std::string>& project);
 
-	void constructDeps(std::vector<std::string>& project, std::map<std::string, dependency>& myTree, std::vector<std::string>& filesDone, int index = 0);
+	//void constructDeps(std::vector<std::string>& project, std::map<std::string, dependency>& myTree, std::vector<std::string>& filesDone, int index = 0);
+    std::map<std::string, dependency> constructDeps(std::vector<std::string>& project);
 
-    void findCycles(dependency current, dependency match);
+    //void findCycles(dependency current, dependency match);
 
-    define findDefines(dependency x);
+    define findDefines(dependency* x);
 }
