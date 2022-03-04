@@ -75,13 +75,66 @@ namespace Parser {
     }
 
     void removeComments(std::vector<std::string>& project) {
+#ifdef _MSC_VER
         std::smatch m;
-        std::regex r("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)");
-        std::regex r1("^[ \t]*$");
+        std::regex r("\\/\\*[\\s\\S]*?\\*\\/|(?:[^\\\\:]|^)\\/\\/.*$"), open("\\/\\*[\\s\\S]*"), close("[\\s\\S]*?\\*\\/"), newline("\\n(?:.(?!\\n))+$"), emptyLine("^[ \t]*$");
         for (std::string &file : project) {
-            while (std::regex_search(file, m, r)) file.erase(m.position(), m.length());
-            while (std::regex_search(file, m, r1)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position()-1, 1) : file.erase(m.position(), m.length()+1);
+            int pos = 0;
+            int openComment = 0;
+            int saveSub = 0;
+            while (pos < file.size()) {
+                int sub = 0;
+
+                int range;
+                std::string temp;
+                if (file.size() - pos >= 500) { //TODO: lower numbers faster. Write speed?
+                    range = 500;
+                    temp = file.substr(pos, range);
+                    std::regex_search(temp, m, newline); //limit to last newline
+                    range = m.position();
+                    temp = file.substr(pos, range);
+                } else {
+                    range = file.size() - pos + 1;
+                    temp = file.substr(pos, range);
+                }
+
+                if (openComment) {
+                    if (std::regex_search(temp, m, close)) {
+                        //remove everything between openComment and m.pos
+                        file.erase(openComment, saveSub + m.length());
+                        pos += m.position() - saveSub - m.length();
+                        saveSub = openComment = 0;
+                    } else {
+                        saveSub += range;
+                        pos += range;
+                    }
+                    continue;
+                }
+
+                //find whole matches
+                while (std::regex_search(temp, m, r)) {
+                    file.erase(m.position() + pos, m.length());
+                    sub += m.length();
+                    temp.erase(m.position(), m.length());
+                }
+                
+                //find partial matches
+                if (std::regex_search(temp, m, open)) {
+                    openComment = pos + m.position();
+                    saveSub = m.length();
+                }
+                pos += range - sub;
+            }
+            while (std::regex_search(file, m, emptyLine)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
         }
+#else
+        std::smatch m;
+        std::regex r("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), r1("^[ \t]*$");
+        for (std::string& file : project) {
+            while (std::regex_search(file, m, r)) file.erase(m.position(), m.length());
+            while (std::regex_search(file, m, r1)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
+        }
+#endif
     }
 
     void parseProject(std::string directory) {
@@ -103,7 +156,6 @@ namespace Parser {
         //    std::vector<datatypes*> tempData = parseFile(file);
         //    std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
         //}
-        //std::cout << project[0];
     }
 
     //option to directly pass the parsed data?

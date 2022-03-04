@@ -48,7 +48,7 @@ namespace Parser {
                     fileSkipped = true;
                     curFileSkipped = true;
                     //std::cout << "File skipped: " << filename << "\n";
-                    break;*//*
+                    break;
                 }
                 deps.push_back(myTree.find(m[1])->second);
                 //std::cout << file.substr(m.position(), m.length()) << "\n";
