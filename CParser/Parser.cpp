@@ -35,6 +35,21 @@ template <class T> std::string type_name() {
     else if (std::is_rvalue_reference<T>::value) r += "&&";
     return r;
 }
+
+#include <stdint.h>
+
+#ifdef _WIN32 //  Windows
+#include <intrin.h>
+uint64_t rdtsc() { return __rdtsc(); }
+#else //  Linux/GCC
+uint64_t rdtsc() {
+    unsigned int lo, hi;
+    __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}
+#endif
+
+#include <chrono>
 //END TEMP
 #pragma endregion tempRegion
 
@@ -74,10 +89,14 @@ namespace Parser {
         return {};
     }
 
+    //if you're thinking of messing with this function: don't. Just trust me
     void removeComments(std::vector<std::string>& project) {
+        //MSVC has a bug with regex that makes it both possible and easy to stack overflow regex on large matches. Apparently other compilers don't have this problem.
+        //I solve this by breaking up the file into chunks that fit within match to search for matches, guaranteeing they won't stack overflow. I then manually deal with
+        //large matches. I clocked this in as actually *faster* than regex on the entire file in many cases.
 #ifdef _MSC_VER
         std::smatch m;
-        std::regex r("\\/\\*[\\s\\S]*?\\*\\/|(?:[^\\\\:]|^)\\/\\/.*$"), open("\\/\\*[\\s\\S]*"), close("[\\s\\S]*?\\*\\/"), newline("\\n(?:.(?!\\n))+$"), emptyLine("^[ \t]*$");
+        std::regex comment("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), open("\\/\\*[\\s\\S]*"), close("[\\s\\S]*?\\*\\/"), newline("\\n(?:.(?!\\n))+$"), emptyLine("^[ \t]*$");
         for (std::string &file : project) {
             int pos = 0;
             int openComment = 0;
@@ -87,8 +106,8 @@ namespace Parser {
 
                 int range;
                 std::string temp;
-                if (file.size() - pos >= 500) { //TODO: lower numbers faster. Write speed?
-                    range = 500;
+                if (file.size() - pos >= 2500) { //break the file into chunks small enough to fit match (no stack overflow)
+                    range = 2500;
                     temp = file.substr(pos, range);
                     std::regex_search(temp, m, newline); //limit to last newline
                     range = m.position();
@@ -112,12 +131,12 @@ namespace Parser {
                 }
 
                 //find whole matches
-                while (std::regex_search(temp, m, r)) {
-                    file.erase(m.position() + pos, m.length());
+                while (std::regex_search(temp, m, comment)) {
                     sub += m.length();
                     temp.erase(m.position(), m.length());
                 }
-                
+                file.replace(pos, range, temp);
+
                 //find partial matches
                 if (std::regex_search(temp, m, open)) {
                     openComment = pos + m.position();
@@ -129,10 +148,10 @@ namespace Parser {
         }
 #else
         std::smatch m;
-        std::regex r("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), r1("^[ \t]*$");
+        std::regex comment("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), emptyLine("^[ \t]*$");
         for (std::string& file : project) {
-            while (std::regex_search(file, m, r)) file.erase(m.position(), m.length());
-            while (std::regex_search(file, m, r1)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
+            while (std::regex_search(file, m, comment)) file.erase(m.position(), m.length());
+            while (std::regex_search(file, m, emptyLine)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
         }
 #endif
     }
@@ -162,6 +181,11 @@ namespace Parser {
 }
 
 //TEMP (for testing)
+
 int main() {
+    //auto temp = rdtsc();
+    //auto start = std::chrono::steady_clock::now();
     Parser::parseProject("C:/Users/EthanKelly/Desktop/Code/CParser");
+    //std::cout << "\n\n" << rdtsc() - temp << " cycles.\n";
+    //std::cout << std::chrono::duration <double, std::nano>(std::chrono::steady_clock::now() - start).count() << " ns" << std::endl;
 }

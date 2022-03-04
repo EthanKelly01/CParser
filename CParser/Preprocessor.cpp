@@ -25,55 +25,7 @@ namespace Parser {
         }
     }
 
-    /*void constructDeps(std::vector<std::string>& project, std::map<std::string, dependency>& myTree, std::vector<std::string>& filesDone, int index) {
-        //TODO: Resolve circular dependency issues. Temp dependency?
-        if (index > project.size()) {
-            //std::cout << "Something went wrong.\n";
-            return;
-        }
-        std::smatch m;
-        std::regex r;
-
-        bool fileSkipped = 0;
-        for (std::string file : project) {
-            bool curFileSkipped = 0;
-            std::string filename = file.substr(11, file.find_first_of("\n") - 11); //TODO: make this regex or something
-            if (std::find(filesDone.begin(), filesDone.end(), filename) != filesDone.end()) continue;
-            //std::cout << "File started: " << filename << "\n";
-            std::vector<dependency> deps;
-
-            r = "^[ \t]*#[ \t]*include[ \t]+\"([[:graph:]]+)\""; //find all valid includes in a file
-            while (std::regex_search(file, m, r)) {
-                if (std::find(filesDone.begin(), filesDone.end(), m[1]) == filesDone.end()) {
-                    fileSkipped = true;
-                    curFileSkipped = true;
-                    //std::cout << "File skipped: " << filename << "\n";
-                    break;
-                }
-                deps.push_back(myTree.find(m[1])->second);
-                //std::cout << file.substr(m.position(), m.length()) << "\n";
-                file.erase(m.position(), m.length());
-            }
-            if (!curFileSkipped) {
-                define defines;
-                r = "^[ \t]*#[ \t]*define[ \t]+([[:graph:]]+)[ \t]+([[:print:]]+$)"; //add all defines
-                while (std::regex_search(file, m, r)) {
-                    defines.push_back({ m[1], m[2] }); //add each valid define in the file
-                    file.erase(m.position(), m.length());
-                }
-
-                myTree.insert({ filename, { filename, deps, defines } });
-                filesDone.push_back(filename);
-                //std::cout << filename << " file done\n";
-            } else for (dependency x : deps) file += "#include \"" + x.filename + "\"\n";
-        }
-        if (fileSkipped) constructDeps(project, myTree, filesDone, index + 1);
-    }*/
-
     std::map<std::string, dependency> constructDeps(std::vector<std::string>& project) {
-        //New strat: at a blank dependency for each file, run through each file once to collect deps and defines, then add to blank file
-        //Side note: holy **** was my previous solution bad
-
         std::map<std::string, dependency> myTree;
         for (std::string file : project) myTree.insert({ file.substr(11, file.find_first_of("\n") - 11), {{}, {}} });
         std::smatch m;
