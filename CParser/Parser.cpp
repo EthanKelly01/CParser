@@ -15,7 +15,6 @@ namespace fs = std::filesystem;
 //TEMP (for testing)
 #pragma region tempRegion
 #include <iostream>
-#define FILENAME = "example.txt"
 
 //returns the demangled type name of the variable x
 //call `type_name<decltype(x)>()`
@@ -96,11 +95,8 @@ namespace Parser {
         //large matches. I clocked this in as actually *faster* than regex on the entire file in many cases.
 #ifdef _MSC_VER
         std::smatch m;
-        std::regex comment("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), open("\\/\\*[\\s\\S]*"), close("[\\s\\S]*?\\*\\/"), newline("\\n(?:.(?!\\n))+$"), emptyLine("^[ \t]*$");
         for (std::string &file : project) {
-            int pos = 0;
-            int openComment = 0;
-            int saveSub = 0;
+            int pos = 0, openComment = 0, saveSub = 0;
             while (pos < file.size()) {
                 int sub = 0;
 
@@ -109,7 +105,7 @@ namespace Parser {
                 if (file.size() - pos >= 2500) { //break the file into chunks small enough to fit match (no stack overflow)
                     range = 2500;
                     temp = file.substr(pos, range);
-                    std::regex_search(temp, m, newline); //limit to last newline
+                    std::regex_search(temp, m, std::regex("\\n(?:.(?!\\n))+$")); //limit to last newline
                     range = m.position();
                     temp = file.substr(pos, range);
                 } else {
@@ -118,7 +114,7 @@ namespace Parser {
                 }
 
                 if (openComment) {
-                    if (std::regex_search(temp, m, close)) {
+                    if (std::regex_search(temp, m, std::regex("[\\s\\S]*?\\*\\/"))) {
                         //remove everything between openComment and m.pos
                         file.erase(openComment, saveSub + m.length());
                         pos += m.position() - saveSub - m.length();
@@ -131,27 +127,26 @@ namespace Parser {
                 }
 
                 //find whole matches
-                while (std::regex_search(temp, m, comment)) {
+                while (std::regex_search(temp, m, std::regex("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"))) {
                     sub += m.length();
                     temp.erase(m.position(), m.length());
                 }
                 file.replace(pos, range, temp);
 
                 //find partial matches
-                if (std::regex_search(temp, m, open)) {
+                if (std::regex_search(temp, m, std::regex("\\/\\*[\\s\\S]*"))) {
                     openComment = pos + m.position();
                     saveSub = m.length();
                 }
                 pos += range - sub;
             }
-            while (std::regex_search(file, m, emptyLine)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
+            while (std::regex_search(file, m, std::regex("^[ \t]*$"))) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
         }
 #else
         std::smatch m;
-        std::regex comment("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"), emptyLine("^[ \t]*$");
         for (std::string& file : project) {
-            while (std::regex_search(file, m, comment)) file.erase(m.position(), m.length());
-            while (std::regex_search(file, m, emptyLine)) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
+            while (std::regex_search(file, m, std::regex("(?://[[:print:]]+$)|(?:/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/)"))) file.erase(m.position(), m.length());
+            while (std::regex_search(file, m, std::regex("^[ \t]*$"))) (m.position() + m.length() + 1 >= file.size()) ? file.erase(m.position() - 1, 1) : file.erase(m.position(), m.length() + 1);
         }
 #endif
     }
