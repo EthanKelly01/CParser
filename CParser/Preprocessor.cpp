@@ -30,7 +30,7 @@ namespace Parser {
             std::vector<dependency*> deps;
 
             while (std::regex_search(file, m, std::regex("^[ \t]*#[ \t]*include[ \t]+\"([[:graph:]]+)\""))) { //find all valid file includes in a file (not libraries)
-                deps.push_back(&myTree.find(m[1])->second);
+                if (myTree.find(m[1]) != myTree.end()) deps.push_back(&myTree.find(m[1])->second);
                 file.erase(m.position(), m.length());
             }
             define defines;

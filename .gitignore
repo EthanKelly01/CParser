@@ -7,3 +7,4 @@ CParser/CParser.sln
 !*.hpp
 !*.md
 !*.txt
+!*.lib

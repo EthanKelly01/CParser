@@ -7,85 +7,24 @@
 
 #include "Parser.h"
 
+#include "lib\include\Debugger.h"
+
 #include <regex>
 #include <fstream>
 #include <filesystem>
 namespace fs = std::filesystem;
 
-//TEMP (for testing)
-#pragma region tempRegion
-#include <iostream>
 
-//returns the demangled type name of the variable x
-//call `type_name<decltype(x)>()`
-template <class T> std::string type_name() {
-    typedef typename std::remove_reference<T>::type TR;
-    std::unique_ptr<char, void(*)(void*)> own(
-#ifndef _MSC_VER
-        abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
-#else
-        nullptr,
-#endif
-        std::free);
-    std::string r = own != nullptr ? own.get() : typeid(TR).name();
-    if (std::is_const<TR>::value) r += " const";
-    if (std::is_volatile<TR>::value) r += " volatile";
-    if (std::is_lvalue_reference<T>::value) r += "&";
-    else if (std::is_rvalue_reference<T>::value) r += "&&";
-    return r;
-}
+#include <iostream> //TEMP (for testing)
 
-#include <stdint.h>
-
-#ifdef _WIN32 //  Windows
-#include <intrin.h>
-uint64_t rdtsc() { return __rdtsc(); }
-#else //  Linux/GCC
-uint64_t rdtsc() {
-    unsigned int lo, hi;
-    __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-}
-#endif
-
-#include <chrono>
-//END TEMP
-#pragma endregion tempRegion
 
 namespace Parser {
 
     //this needs to be recursive to catch states inside other states, but also has to get the data to read
-    inline std::vector<datatypes*> parseFile(std::string file) {
-        int index = 0;
-        std::vector<std::string> myVec = {};
+    std::vector<datatypes*> parseFile(std::string file) {
+        std::vector<datatypes*> myData;
 
-        //split file by delimiter/command
-
-        return recursiveParse(myVec, index);
-    }
-
-    std::vector<datatypes*> recursiveParse(std::vector<std::string> file, int& index, int state) {
-        //REGEX pattern matching to determine next state
-        //throw out anything after regex comment match
-
-
-        //state machine
-        switch (state) {
-        case (NAMESPACE):
-            break;
-        case (CLASS):
-            break;
-        case (FUNCTION):
-            break;
-        case (ENUM):
-            break;
-        case (VARIABLE):
-            break;
-        default:
-            //Also includes VOID
-            break;
-        }
-        return {};
+        return myData;
     }
 
     //if you're thinking of messing with this function: don't. Just trust me
@@ -165,11 +104,11 @@ namespace Parser {
             }
         removeComments(project);
         preprocessor(project);
-        //std::vector<datatypes*> myData;
-        //for (std::string file : project) {
-        //    std::vector<datatypes*> tempData = parseFile(file);
-        //    std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
-        //}
+        std::vector<datatypes*> myData;
+        for (std::string file : project) {
+            std::vector<datatypes*> tempData = parseFile(file);
+            std::copy(tempData.begin(), tempData.end(), myData.end()); //TODO: Optimize
+        }
     }
 
     //option to directly pass the parsed data?
@@ -178,9 +117,5 @@ namespace Parser {
 //TEMP (for testing)
 
 int main() {
-    //auto temp = rdtsc();
-    //auto start = std::chrono::steady_clock::now();
     Parser::parseProject("C:/Users/EthanKelly/Desktop/Code/CParser");
-    //std::cout << "\n\n" << rdtsc() - temp << " cycles.\n";
-    //std::cout << std::chrono::duration <double, std::nano>(std::chrono::steady_clock::now() - start).count() << " ns" << std::endl;
 }
